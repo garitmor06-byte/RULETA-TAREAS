@@ -1,0 +1,741 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <title>Ruleta de Asignación de Tareas</title>
+    <style>
+[MAC_ADDRESS] * { margin: 0; padding: 0; box-sizing: border-box; }
+[MAC_ADDRESS] body {
+[MAC_ADDRESS]     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+[MAC_ADDRESS]     background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+[MAC_ADDRESS]     min-height: 100vh;
+[MAC_ADDRESS]     color: #fff;
+[MAC_ADDRESS]     overflow-x: hidden;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .nav-tabs {
+[MAC_ADDRESS]     display: flex;
+[MAC_ADDRESS]     background: rgba(0,0,0,0.3);
+[MAC_ADDRESS]     padding: 10px;
+[MAC_ADDRESS]     gap: 5px;
+[MAC_ADDRESS]     flex-wrap: wrap;
+[MAC_ADDRESS]     justify-content: center;
+[MAC_ADDRESS]     position: sticky;
+[MAC_ADDRESS]     top: 0;
+[MAC_ADDRESS]     z-index: 100;
+[MAC_ADDRESS]     backdrop-filter: blur(10px);
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .nav-tab {
+[MAC_ADDRESS]     padding: 10px 20px;
+[MAC_ADDRESS]     border: none;
+[MAC_ADDRESS]     border-radius: 25px;
+[MAC_ADDRESS]     background: rgba(255,255,255,0.1);
+[MAC_ADDRESS]     color: #fff;
+[MAC_ADDRESS]     cursor: pointer;
+[MAC_ADDRESS]     font-size: 14px;
+[MAC_ADDRESS]     font-weight: 600;
+[MAC_ADDRESS]     transition: all 0.3s;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .nav-tab:hover { background: rgba(255,255,255,0.2); }
+[MAC_ADDRESS] .nav-tab.active { background: #e94560; box-shadow: 0 4px 15px rgba(233,69,96,0.4); }
+[MAC_ADDRESS] .section { display: none; padding: 20px; max-width: 1200px; margin: 0 auto; }
+[MAC_ADDRESS] .section.active { display: block; }
+[MAC_ADDRESS] .wheel-container {
+[MAC_ADDRESS]     display: flex;
+[MAC_ADDRESS]     flex-direction: column;
+[MAC_ADDRESS]     align-items: center;
+[MAC_ADDRESS]     gap: 20px;
+[MAC_ADDRESS]     padding: 20px;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .wheel-wrapper {
+[MAC_ADDRESS]     position: relative;
+[MAC_ADDRESS]     width: 340px;
+[MAC_ADDRESS]     height: 340px;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .wheel-pointer {
+[MAC_ADDRESS]     position: absolute;
+[MAC_ADDRESS]     top: -15px;
+[MAC_ADDRESS]     left: 50%;
+[MAC_ADDRESS]     transform: translateX(-50%);
+[MAC_ADDRESS]     width: 0;
+[MAC_ADDRESS]     height: 0;
+[MAC_ADDRESS]     border-left: 15px solid transparent;
+[MAC_ADDRESS]     border-right: 15px solid transparent;
+[MAC_ADDRESS]     border-top: 30px solid #e94560;
+[MAC_ADDRESS]     z-index: 10;
+[MAC_ADDRESS]     filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3));
+[MAC_ADDRESS] }
+[MAC_ADDRESS] #wheelCanvas {
+[MAC_ADDRESS]     width: 340px;
+[MAC_ADDRESS]     height: 340px;
+[MAC_ADDRESS]     border-radius: 50%;
+[MAC_ADDRESS]     box-shadow: 0 0 30px rgba(233,69,96,0.3), 0 0 60px rgba(233,69,96,0.1);
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .spin-btn {
+[MAC_ADDRESS]     padding: 15px 50px;
+[MAC_ADDRESS]     font-size: 18px;
+[MAC_ADDRESS]     font-weight: 700;
+[MAC_ADDRESS]     border: none;
+[MAC_ADDRESS]     border-radius: 30px;
+[MAC_ADDRESS]     background: linear-gradient(135deg, #e94560, #c23152);
+[MAC_ADDRESS]     color: #fff;
+[MAC_ADDRESS]     cursor: pointer;
+[MAC_ADDRESS]     transition: all 0.3s;
+[MAC_ADDRESS]     box-shadow: 0 5px 20px rgba(233,69,96,0.4);
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .spin-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(233,69,96,0.5); }
+[MAC_ADDRESS] .spin-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+[MAC_ADDRESS] .activity-selector {
+[MAC_ADDRESS]     display: flex;
+[MAC_ADDRESS]     flex-wrap: wrap;
+[MAC_ADDRESS]     gap: 10px;
+[MAC_ADDRESS]     justify-content: center;
+[MAC_ADDRESS]     margin: 15px 0;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .activity-chip {
+[MAC_ADDRESS]     padding: 8px 16px;
+[MAC_ADDRESS]     border-radius: 20px;
+[MAC_ADDRESS]     background: rgba(255,255,255,0.1);
+[MAC_ADDRESS]     border: 2px solid rgba(255,255,255,0.2);
+[MAC_ADDRESS]     cursor: pointer;
+[MAC_ADDRESS]     transition: all 0.3s;
+[MAC_ADDRESS]     font-size: 13px;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .activity-chip.selected { background: #e94560; border-color: #e94560; }
+[MAC_ADDRESS] .activity-chip:hover { border-color: #e94560; }
+[MAC_ADDRESS] .team-size-selector {
+[MAC_ADDRESS]     display: flex;
+[MAC_ADDRESS]     gap: 10px;
+[MAC_ADDRESS]     align-items: center;
+[MAC_ADDRESS]     justify-content: center;
+[MAC_ADDRESS]     margin: 10px 0;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .team-size-btn {
+[MAC_ADDRESS]     width: 40px;
+[MAC_ADDRESS]     height: 40px;
+[MAC_ADDRESS]     border-radius: 50%;
+[MAC_ADDRESS]     border: 2px solid rgba(255,255,255,0.3);
+[MAC_ADDRESS]     background: transparent;
+[MAC_ADDRESS]     color: #fff;
+[MAC_ADDRESS]     font-size: 16px;
+[MAC_ADDRESS]     font-weight: 700;
+[MAC_ADDRESS]     cursor: pointer;
+[MAC_ADDRESS]     transition: all 0.3s;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .team-size-btn.selected { background: #e94560; border-color: #e94560; }
+[MAC_ADDRESS] .result-display {
+[MAC_ADDRESS]     background: rgba(255,255,255,0.05);
+[MAC_ADDRESS]     border: 2px solid rgba(233,69,96,0.3);
+[MAC_ADDRESS]     border-radius: 15px;
+[MAC_ADDRESS]     padding: 20px;
+[MAC_ADDRESS]     text-align: center;
+[MAC_ADDRESS]     min-height: 100px;
+[MAC_ADDRESS]     width: 100%;
+[MAC_ADDRESS]     max-width: 500px;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .result-display h3 { color: #e94560; margin-bottom: 10px; }
+[MAC_ADDRESS] .result-names { font-size: 18px; font-weight: 600; line-height: 1.8; }
+[MAC_ADDRESS] .participants-grid {
+[MAC_ADDRESS]     display: grid;
+[MAC_ADDRESS]     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+[MAC_ADDRESS]     gap: 10px;
+[MAC_ADDRESS]     margin: 20px 0;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .participant-card {
+[MAC_ADDRESS]     background: rgba(255,255,255,0.05);
+[MAC_ADDRESS]     border: 1px solid rgba(255,255,255,0.1);
+[MAC_ADDRESS]     border-radius: 10px;
+[MAC_ADDRESS]     padding: 12px;
+[MAC_ADDRESS]     display: flex;
+[MAC_ADDRESS]     align-items: center;
+[MAC_ADDRESS]     gap: 10px;
+[MAC_ADDRESS]     transition: all 0.3s;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .participant-card:hover { border-color: #e94560; background: rgba(233,69,96,0.1); }
+[MAC_ADDRESS] .participant-avatar {
+[MAC_ADDRESS]     width: 35px;
+[MAC_ADDRESS]     height: 35px;
+[MAC_ADDRESS]     border-radius: 50%;
+[MAC_ADDRESS]     background: linear-gradient(135deg, #e94560, #c23152);
+[MAC_ADDRESS]     display: flex;
+[MAC_ADDRESS]     align-items: center;
+[MAC_ADDRESS]     justify-content: center;
+[MAC_ADDRESS]     font-weight: 700;
+[MAC_ADDRESS]     font-size: 14px;
+[MAC_ADDRESS]     flex-shrink: 0;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .participant-name { font-size: 13px; word-break: break-all; }
+[MAC_ADDRESS] .participant-remove {
+[MAC_ADDRESS]     margin-left: auto;
+[MAC_ADDRESS]     background: none;
+[MAC_ADDRESS]     border: none;
+[MAC_ADDRESS]     color: #ff6b6b;
+[MAC_ADDRESS]     cursor: pointer;
+[MAC_ADDRESS]     font-size: 18px;
+[MAC_ADDRESS]     opacity: 0.5;
+[MAC_ADDRESS]     transition: opacity 0.3s;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .participant-remove:hover { opacity: 1; }
+[MAC_ADDRESS] .activity-card {
+[MAC_ADDRESS]     background: rgba(255,255,255,0.05);
+[MAC_ADDRESS]     border: 1px solid rgba(255,255,255,0.1);
+[MAC_ADDRESS]     border-radius: 12px;
+[MAC_ADDRESS]     padding: 15px;
+[MAC_ADDRESS]     margin: 10px 0;
+[MAC_ADDRESS]     display: flex;
+[MAC_ADDRESS]     align-items: center;
+[MAC_ADDRESS]     justify-content: space-between;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .activity-card input {
+[MAC_ADDRESS]     background: transparent;
+[MAC_ADDRESS]     border: none;
+[MAC_ADDRESS]     color: #fff;
+[MAC_ADDRESS]     font-size: 16px;
+[MAC_ADDRESS]     width: 70%;
+[MAC_ADDRESS]     outline: none;
+[MAC_ADDRESS]     border-bottom: 1px solid rgba(255,255,255,0.2);
+[MAC_ADDRESS]     padding: 5px;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .activity-card input:focus { border-bottom-color: #e94560; }
+[MAC_ADDRESS] .history-table {
+[MAC_ADDRESS]     width: 100%;
+[MAC_ADDRESS]     border-collapse: collapse;
+[MAC_ADDRESS]     margin: 20px 0;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .history-table th, .history-table td {
+[MAC_ADDRESS]     padding: 12px;
+[MAC_ADDRESS]     text-align: left;
+[MAC_ADDRESS]     border-bottom: 1px solid rgba(255,255,255,0.1);
+[MAC_ADDRESS]     font-size: 13px;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .history-table th {
+[MAC_ADDRESS]     background: rgba(233,69,96,0.2);
+[MAC_ADDRESS]     font-weight: 600;
+[MAC_ADDRESS]     position: sticky;
+[MAC_ADDRESS]     top: 0;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .history-table tr:hover { background: rgba(255,255,255,0.05); }
+[MAC_ADDRESS] .week-filter {
+[MAC_ADDRESS]     display: flex;
+[MAC_ADDRESS]     gap: 10px;
+[MAC_ADDRESS]     align-items: center;
+[MAC_ADDRESS]     margin: 15px 0;
+[MAC_ADDRESS]     flex-wrap: wrap;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .week-filter select, .week-filter input {
+[MAC_ADDRESS]     padding: 8px 15px;
+[MAC_ADDRESS]     border-radius: 8px;
+[MAC_ADDRESS]     border: 1px solid rgba(255,255,255,0.2);
+[MAC_ADDRESS]     background: rgba(255,255,255,0.1);
+[MAC_ADDRESS]     color: #fff;
+[MAC_ADDRESS]     font-size: 14px;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .input-group {
+[MAC_ADDRESS]     display: flex;
+[MAC_ADDRESS]     gap: 10px;
+[MAC_ADDRESS]     margin: 15px 0;
+[MAC_ADDRESS]     flex-wrap: wrap;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .input-group input {
+[MAC_ADDRESS]     flex: 1;
+[MAC_ADDRESS]     min-width: 200px;
+[MAC_ADDRESS]     padding: 12px 18px;
+[MAC_ADDRESS]     border-radius: 10px;
+[MAC_ADDRESS]     border: 1px solid rgba(255,255,255,0.2);
+[MAC_ADDRESS]     background: rgba(255,255,255,0.1);
+[MAC_ADDRESS]     color: #fff;
+[MAC_ADDRESS]     font-size: 14px;
+[MAC_ADDRESS]     outline: none;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .input-group input:focus { border-color: #e94560; }
+[MAC_ADDRESS] .input-group button {
+[MAC_ADDRESS]     padding: 12px 25px;
+[MAC_ADDRESS]     border-radius: 10px;
+[MAC_ADDRESS]     border: none;
+[MAC_ADDRESS]     background: #e94560;
+[MAC_ADDRESS]     color: #fff;
+[MAC_ADDRESS]     font-weight: 600;
+[MAC_ADDRESS]     cursor: pointer;
+[MAC_ADDRESS]     transition: all 0.3s;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .input-group button:hover { background: #c23152; }
+[MAC_ADDRESS] .section-title {
+[MAC_ADDRESS]     font-size: 24px;
+[MAC_ADDRESS]     font-weight: 700;
+[MAC_ADDRESS]     margin-bottom: 20px;
+[MAC_ADDRESS]     display: flex;
+[MAC_ADDRESS]     align-items: center;
+[MAC_ADDRESS]     gap: 10px;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .section-title span { color: #e94560; }
+[MAC_ADDRESS] .stats-row {
+[MAC_ADDRESS]     display: grid;
+[MAC_ADDRESS]     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+[MAC_ADDRESS]     gap: 15px;
+[MAC_ADDRESS]     margin: 20px 0;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .stat-card {
+[MAC_ADDRESS]     background: rgba(255,255,255,0.05);
+[MAC_ADDRESS]     border-radius: 12px;
+[MAC_ADDRESS]     padding: 15px;
+[MAC_ADDRESS]     text-align: center;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .stat-card .number { font-size: 28px; font-weight: 700; color: #e94560; }
+[MAC_ADDRESS] .stat-card .label { font-size: 12px; opacity: 0.7; margin-top: 5px; }
+[MAC_ADDRESS] .btn-danger {
+[MAC_ADDRESS]     background: #ff4757;
+[MAC_ADDRESS]     border: none;
+[MAC_ADDRESS]     color: #fff;
+[MAC_ADDRESS]     padding: 6px 12px;
+[MAC_ADDRESS]     border-radius: 6px;
+[MAC_ADDRESS]     cursor: pointer;
+[MAC_ADDRESS]     font-size: 12px;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .btn-clear {
+[MAC_ADDRESS]     background: rgba(255,75,87,0.2);
+[MAC_ADDRESS]     border: 1px solid #ff4757;
+[MAC_ADDRESS]     color: #ff4757;
+[MAC_ADDRESS]     padding: 8px 16px;
+[MAC_ADDRESS]     border-radius: 8px;
+[MAC_ADDRESS]     cursor: pointer;
+[MAC_ADDRESS]     font-size: 13px;
+[MAC_ADDRESS]     transition: all 0.3s;
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .btn-clear:hover { background: #ff4757; color: #fff; }
+[MAC_ADDRESS] @media (max-width: 600px) {
+[MAC_ADDRESS]     .wheel-wrapper { width: 280px; height: 280px; }
+[MAC_ADDRESS]     #wheelCanvas { width: 280px; height: 280px; }
+[MAC_ADDRESS]     .nav-tab { padding: 8px 14px; font-size: 12px; }
+[MAC_ADDRESS]     .participants-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+[MAC_ADDRESS] }
+[MAC_ADDRESS] @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+[MAC_ADDRESS] .fade-in { animation: fadeIn 0.3s ease; }
+[MAC_ADDRESS] .toast {
+[MAC_ADDRESS]     position: fixed;
+[MAC_ADDRESS]     bottom: 20px;
+[MAC_ADDRESS]     left: 50%;
+[MAC_ADDRESS]     transform: translateX(-50%) translateY(100px);
+[MAC_ADDRESS]     background: #333;
+[MAC_ADDRESS]     color: #fff;
+[MAC_ADDRESS]     padding: 12px 24px;
+[MAC_ADDRESS]     border-radius: 8px;
+[MAC_ADDRESS]     font-size: 14px;
+[MAC_ADDRESS]     z-index: 1000;
+[MAC_ADDRESS]     transition: transform 0.3s;
+[MAC_ADDRESS]     box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+[MAC_ADDRESS] }
+[MAC_ADDRESS] .toast.show { transform: translateX(-50%) translateY(0); }
+[MAC_ADDRESS] .table-container { overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <nav class="nav-tabs">
+[MAC_ADDRESS] <button class="nav-tab active" onclick="showSection('ruleta')">🎯 Ruleta</button>
+[MAC_ADDRESS] <button class="nav-tab" onclick="showSection('participantes')">👥 Participantes</button>
+[MAC_ADDRESS] <button class="nav-tab" onclick="showSection('actividades')">📋 Actividades</button>
+[MAC_ADDRESS] <button class="nav-tab" onclick="showSection('historial')">📊 Historial</button>
+    </nav>
+
+    <div id="ruleta" class="section active">
+[MAC_ADDRESS] <div class="wheel-container">
+[MAC_ADDRESS]     <h2 style="text-align:center;">🎯 Ruleta de Asignación</h2>
+[MAC_ADDRESS]     <div style="margin:10px 0; text-align:center;">
+[MAC_ADDRESS][MAC_ADDRESS]  <label style="opacity:0.7; font-size:14px;">Selecciona actividad:</label>
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="activity-selector" id="activitySelector"></div>
+[MAC_ADDRESS]     </div>
+[MAC_ADDRESS]     <div style="text-align:center;">
+[MAC_ADDRESS][MAC_ADDRESS]  <label style="opacity:0.7; font-size:14px;">Personas por equipo:</label>
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="team-size-selector">
+[MAC_ADDRESS][MAC_ADDRESS]      <button class="team-size-btn" onclick="setTeamSize(1)">1</button>
+[MAC_ADDRESS][MAC_ADDRESS]      <button class="team-size-btn selected" onclick="setTeamSize(2)">2</button>
+[MAC_ADDRESS][MAC_ADDRESS]      <button class="team-size-btn" onclick="setTeamSize(3)">3</button>
+[MAC_ADDRESS][MAC_ADDRESS]      <button class="team-size-btn" onclick="setTeamSize(4)">4</button>
+[MAC_ADDRESS][MAC_ADDRESS]  </div>
+[MAC_ADDRESS]     </div>
+[MAC_ADDRESS]     <div class="wheel-wrapper">
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="wheel-pointer"></div>
+[MAC_ADDRESS][MAC_ADDRESS]  <canvas id="wheelCanvas" width="680" height="680"></canvas>
+[MAC_ADDRESS]     </div>
+[MAC_ADDRESS]     <button class="spin-btn" id="spinBtn" onclick="spinWheel()">🎲 GIRAR RULETA</button>
+[MAC_ADDRESS]     <div class="result-display" id="resultDisplay">
+[MAC_ADDRESS][MAC_ADDRESS]  <h3>Resultado</h3>
+[MAC_ADDRESS][MAC_ADDRESS]  <p style="opacity:0.5;">Gira la ruleta para asignar participantes</p>
+[MAC_ADDRESS]     </div>
+[MAC_ADDRESS] </div>
+    </div>
+
+    <div id="participantes" class="section">
+[MAC_ADDRESS] <div class="section-title">👥 <span>Participantes</span></div>
+[MAC_ADDRESS] <div class="stats-row">
+[MAC_ADDRESS]     <div class="stat-card">
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="number" id="totalParticipants">0</div>
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="label">Total Participantes</div>
+[MAC_ADDRESS]     </div>
+[MAC_ADDRESS]     <div class="stat-card">
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="number" id="totalAssignments">0</div>
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="label">Asignaciones Totales</div>
+[MAC_ADDRESS]     </div>
+[MAC_ADDRESS] </div>
+[MAC_ADDRESS] <div class="input-group">
+[MAC_ADDRESS]     <input type="text" id="newParticipant" placeholder="Agregar nuevo participante (login)..." onkeypress="if(event.key==='Enter')addParticipant()">
+[MAC_ADDRESS]     <button onclick="addParticipant()">+ Agregar</button>
+[MAC_ADDRESS] </div>
+[MAC_ADDRESS] <div class="participants-grid" id="participantsGrid"></div>
+    </div>
+
+    <div id="actividades" class="section">
+[MAC_ADDRESS] <div class="section-title">📋 <span>Actividades</span></div>
+[MAC_ADDRESS] <div class="input-group">
+[MAC_ADDRESS]     <input type="text" id="newActivity" placeholder="Agregar nueva actividad..." onkeypress="if(event.key==='Enter')addActivity()">
+[MAC_ADDRESS]     <button onclick="addActivity()">+ Agregar</button>
+[MAC_ADDRESS] </div>
+[MAC_ADDRESS] <div id="activitiesList"></div>
+    </div>
+
+    <div id="historial" class="section">
+[MAC_ADDRESS] <div class="section-title">📊 <span>Historial Semanal</span></div>
+[MAC_ADDRESS] <div class="week-filter">
+[MAC_ADDRESS]     <label>Semana:</label>
+[MAC_ADDRESS]     <select id="weekFilter" onchange="renderHistory()">
+[MAC_ADDRESS][MAC_ADDRESS]  <option value="all">Todas</option>
+[MAC_ADDRESS]     </select>
+[MAC_ADDRESS]     <button class="btn-clear" onclick="clearHistory()">🗑️ Limpiar Historial</button>
+[MAC_ADDRESS] </div>
+[MAC_ADDRESS] <div class="stats-row" id="historyStats"></div>
+[MAC_ADDRESS] <div class="table-container">
+[MAC_ADDRESS]     <table class="history-table">
+[MAC_ADDRESS][MAC_ADDRESS]  <thead>
+[MAC_ADDRESS][MAC_ADDRESS]      <tr>
+[MAC_ADDRESS][MAC_ADDRESS][MAC_ADDRESS]   <th>Fecha</th>
+[MAC_ADDRESS][MAC_ADDRESS][MAC_ADDRESS]   <th>Semana</th>
+[MAC_ADDRESS][MAC_ADDRESS][MAC_ADDRESS]   <th>Actividad</th>
+[MAC_ADDRESS][MAC_ADDRESS][MAC_ADDRESS]   <th>Equipo Asignado</th>
+[MAC_ADDRESS][MAC_ADDRESS][MAC_ADDRESS]   <th>Acción</th>
+[MAC_ADDRESS][MAC_ADDRESS]      </tr>
+[MAC_ADDRESS][MAC_ADDRESS]  </thead>
+[MAC_ADDRESS][MAC_ADDRESS]  <tbody id="historyBody"></tbody>
+[MAC_ADDRESS]     </table>
+[MAC_ADDRESS] </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+[MAC_ADDRESS] const DEFAULT_PARTICIPANTS = [
+[MAC_ADDRESS]     'erendira','dancruzk','martmici','jrrosl','tarturoi','jsolanam',
+[MAC_ADDRESS]     'srisaias','hernalae','dangparr','urizajes','neriraul','miaranaa',
+[MAC_ADDRESS]     'garcyjed','zgamauri','herneeli','iramirsa','cesanavt','moraedgl',
+[MAC_ADDRESS]     'isramenv','dayycruz','esqunoez','matienre','pauelizo','shirltma',
+[MAC_ADDRESS]     'hqalexi','albmendp','gonzmmig','velazqpo','feregrip','llucyqui'
+[MAC_ADDRESS] ];
+[MAC_ADDRESS] const DEFAULT_ACTIVITIES = ['Actividad 1', 'Actividad 2', 'Actividad 3'];
+
+[MAC_ADDRESS] let participants = JSON.parse(localStorage.getItem('ruleta_participants')) || [...DEFAULT_PARTICIPANTS];
+[MAC_ADDRESS] let activities = JSON.parse(localStorage.getItem('ruleta_activities')) || [...DEFAULT_ACTIVITIES];
+[MAC_ADDRESS] let history = JSON.parse(localStorage.getItem('ruleta_history')) || [];
+[MAC_ADDRESS] let selectedActivity = activities[0] || '';
+[MAC_ADDRESS] let teamSize = 2;
+[MAC_ADDRESS] let isSpinning = false;
+[MAC_ADDRESS] let currentRotation = 0;
+
+[MAC_ADDRESS] const COLORS = [
+[MAC_ADDRESS]     '#e94560','#0f3460','#533483','#2d6187','#16213e',
+[MAC_ADDRESS]     '#1a1a2e','#c23152','#4a1942','#6a0572','#ab83a1',
+[MAC_ADDRESS]     '#e94560','#0f3460','#533483','#2d6187','#16213e',
+[MAC_ADDRESS]     '#1a1a2e','#c23152','#4a1942','#6a0572','#ab83a1',
+[MAC_ADDRESS]     '#e94560','#0f3460','#533483','#2d6187','#16213e',
+[MAC_ADDRESS]     '#1a1a2e','#c23152','#4a1942','#6a0572','#ab83a1'
+[MAC_ADDRESS] ];
+
+[MAC_ADDRESS] function showSection(id) {
+[MAC_ADDRESS]     document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+[MAC_ADDRESS]     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+[MAC_ADDRESS]     document.getElementById(id).classList.add('active');
+[MAC_ADDRESS]     event.target.classList.add('active');
+[MAC_ADDRESS]     if (id === 'ruleta') { renderWheel(); renderActivitySelector(); }
+[MAC_ADDRESS]     if (id === 'participantes') renderParticipants();
+[MAC_ADDRESS]     if (id === 'actividades') renderActivities();
+[MAC_ADDRESS]     if (id === 'historial') { renderWeekFilter(); renderHistory(); }
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function renderWheel() {
+[MAC_ADDRESS]     const canvas = document.getElementById('wheelCanvas');
+[MAC_ADDRESS]     const ctx = canvas.getContext('2d');
+[MAC_ADDRESS]     const cx = canvas.width / 2;
+[MAC_ADDRESS]     const cy = canvas.height / 2;
+[MAC_ADDRESS]     const radius = cx - 10;
+[MAC_ADDRESS]     ctx.clearRect(0, 0, canvas.width, canvas.height);
+[MAC_ADDRESS]     const n = participants.length;
+[MAC_ADDRESS]     if (n === 0) return;
+[MAC_ADDRESS]     const arc = (2 * Math.PI) / n;
+[MAC_ADDRESS]     for (let i = 0; i < n; i++) {
+[MAC_ADDRESS][MAC_ADDRESS]  const angle = i * arc;
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.beginPath();
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.moveTo(cx, cy);
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.arc(cx, cy, radius, angle, angle + arc);
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.closePath();
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.fillStyle = COLORS[i % COLORS.length];
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.fill();
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.lineWidth = 1;
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.stroke();
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.save();
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.translate(cx, cy);
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.rotate(angle + arc / 2);
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.textAlign = 'right';
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.fillStyle = '#fff';
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.font = n > 20 ? '11px Segoe UI' : '13px Segoe UI';
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.fillText(participants[i], radius - 15, 4);
+[MAC_ADDRESS][MAC_ADDRESS]  ctx.restore();
+[MAC_ADDRESS]     }
+[MAC_ADDRESS]     ctx.beginPath();
+[MAC_ADDRESS]     ctx.arc(cx, cy, 30, 0, 2 * Math.PI);
+[MAC_ADDRESS]     ctx.fillStyle = '#1a1a2e';
+[MAC_ADDRESS]     ctx.fill();
+[MAC_ADDRESS]     ctx.strokeStyle = '#e94560';
+[MAC_ADDRESS]     ctx.lineWidth = 3;
+[MAC_ADDRESS]     ctx.stroke();
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function spinWheel() {
+[MAC_ADDRESS]     if (isSpinning || participants.length === 0) return;
+[MAC_ADDRESS]     if (!selectedActivity) { showToast('Selecciona una actividad primero'); return; }
+[MAC_ADDRESS]     isSpinning = true;
+[MAC_ADDRESS]     document.getElementById('spinBtn').disabled = true;
+[MAC_ADDRESS]     const canvas = document.getElementById('wheelCanvas');
+[MAC_ADDRESS]     const n = participants.length;
+[MAC_ADDRESS]     const arc = 360 / n;
+[MAC_ADDRESS]     const extraSpins = 5 + Math.random() * 5;
+[MAC_ADDRESS]     const targetAngle = Math.random() * 360;
+[MAC_ADDRESS]     const totalRotation = extraSpins * 360 + targetAngle;
+[MAC_ADDRESS]     currentRotation += totalRotation;
+[MAC_ADDRESS]     canvas.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+[MAC_ADDRESS]     canvas.style.transform = `rotate(${currentRotation}deg)`;
+[MAC_ADDRESS]     setTimeout(() => {
+[MAC_ADDRESS][MAC_ADDRESS]  isSpinning = false;
+[MAC_ADDRESS][MAC_ADDRESS]  document.getElementById('spinBtn').disabled = false;
+[MAC_ADDRESS][MAC_ADDRESS]  const normalizedAngle = (360 - (currentRotation % 360) + 270) % 360;
+[MAC_ADDRESS][MAC_ADDRESS]  const winnerIndex = Math.floor(normalizedAngle / arc) % n;
+[MAC_ADDRESS][MAC_ADDRESS]  let team = [participants[winnerIndex]];
+[MAC_ADDRESS][MAC_ADDRESS]  let availableIndices = [...Array(n).keys()].filter(i => i !== winnerIndex);
+[MAC_ADDRESS][MAC_ADDRESS]  for (let t = 1; t < teamSize && availableIndices.length > 0; t++) {
+[MAC_ADDRESS][MAC_ADDRESS]      const randIdx = Math.floor(Math.random() * availableIndices.length);
+[MAC_ADDRESS][MAC_ADDRESS]      team.push(participants[availableIndices[randIdx]]);
+[MAC_ADDRESS][MAC_ADDRESS]      availableIndices.splice(randIdx, 1);
+[MAC_ADDRESS][MAC_ADDRESS]  }
+[MAC_ADDRESS][MAC_ADDRESS]  const resultDiv = document.getElementById('resultDisplay');
+[MAC_ADDRESS][MAC_ADDRESS]  const teamJSON = JSON.stringify(team);
+[MAC_ADDRESS][MAC_ADDRESS]  resultDiv.innerHTML = `
+[MAC_ADDRESS][MAC_ADDRESS]      <h3>🎉 ${selectedActivity}</h3>
+[MAC_ADDRESS][MAC_ADDRESS]      <div class="result-names">${team.join('<br>')}</div>
+[MAC_ADDRESS][MAC_ADDRESS]      <button onclick='saveAssignment("${selectedActivity}", ${teamJSON})'
+[MAC_ADDRESS][MAC_ADDRESS][MAC_ADDRESS][MAC_ADDRESS]style="margin-top:15px; padding:8px 20px; border:none; border-radius:8px; background:#4CAF50; color:#fff; cursor:pointer; font-weight:600;">
+[MAC_ADDRESS][MAC_ADDRESS][MAC_ADDRESS]   ✅ Guardar Asignación
+[MAC_ADDRESS][MAC_ADDRESS]      </button>
+[MAC_ADDRESS][MAC_ADDRESS]  `;
+[MAC_ADDRESS][MAC_ADDRESS]  resultDiv.classList.add('fade-in');
+[MAC_ADDRESS]     }, 4200);
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function setTeamSize(size) {
+[MAC_ADDRESS]     teamSize = size;
+[MAC_ADDRESS]     document.querySelectorAll('.team-size-btn').forEach(btn => {
+[MAC_ADDRESS][MAC_ADDRESS]  btn.classList.toggle('selected', parseInt(btn.textContent) === size);
+[MAC_ADDRESS]     });
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function renderActivitySelector() {
+[MAC_ADDRESS]     const container = document.getElementById('activitySelector');
+[MAC_ADDRESS]     container.innerHTML = activities.map(a =>
+[MAC_ADDRESS][MAC_ADDRESS]  `<div class="activity-chip ${a === selectedActivity ? 'selected' : ''}"
+[MAC_ADDRESS][MAC_ADDRESS][MAC_ADDRESS]onclick="selectActivity(this.dataset.name)" data-name="${a}">${a}</div>`
+[MAC_ADDRESS]     ).join('');
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function selectActivity(name) {
+[MAC_ADDRESS]     selectedActivity = name;
+[MAC_ADDRESS]     renderActivitySelector();
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function renderParticipants() {
+[MAC_ADDRESS]     document.getElementById('totalParticipants').textContent = participants.length;
+[MAC_ADDRESS]     document.getElementById('totalAssignments').textContent = history.length;
+[MAC_ADDRESS]     const grid = document.getElementById('participantsGrid');
+[MAC_ADDRESS]     grid.innerHTML = participants.map((p, i) => `
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="participant-card fade-in">
+[MAC_ADDRESS][MAC_ADDRESS]      <div class="participant-avatar">${p.charAt(0).toUpperCase()}</div>
+[MAC_ADDRESS][MAC_ADDRESS]      <div class="participant-name">${p}</div>
+[MAC_ADDRESS][MAC_ADDRESS]      <button class="participant-remove" onclick="removeParticipant(${i})">×</button>
+[MAC_ADDRESS][MAC_ADDRESS]  </div>
+[MAC_ADDRESS]     `).join('');
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function addParticipant() {
+[MAC_ADDRESS]     const input = document.getElementById('newParticipant');
+[MAC_ADDRESS]     const name = input.value.trim().toLowerCase();
+[MAC_ADDRESS]     if (!name) return;
+[MAC_ADDRESS]     if (participants.includes(name)) { showToast('Ya existe este participante'); return; }
+[MAC_ADDRESS]     participants.push(name);
+[MAC_ADDRESS]     saveData();
+[MAC_ADDRESS]     input.value = '';
+[MAC_ADDRESS]     renderParticipants();
+[MAC_ADDRESS]     renderWheel();
+[MAC_ADDRESS]     showToast(`✅ ${name} agregado`);
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function removeParticipant(index) {
+[MAC_ADDRESS]     const name = participants[index];
+[MAC_ADDRESS]     participants.splice(index, 1);
+[MAC_ADDRESS]     saveData();
+[MAC_ADDRESS]     renderParticipants();
+[MAC_ADDRESS]     renderWheel();
+[MAC_ADDRESS]     showToast(`❌ ${name} eliminado`);
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function renderActivities() {
+[MAC_ADDRESS]     const list = document.getElementById('activitiesList');
+[MAC_ADDRESS]     list.innerHTML = activities.map((a, i) => `
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="activity-card fade-in">
+[MAC_ADDRESS][MAC_ADDRESS]      <input type="text" value="${a}" onchange="updateActivity(${i}, this.value)" />
+[MAC_ADDRESS][MAC_ADDRESS]      <button class="btn-danger" onclick="removeActivity(${i})">Eliminar</button>
+[MAC_ADDRESS][MAC_ADDRESS]  </div>
+[MAC_ADDRESS]     `).join('');
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function addActivity() {
+[MAC_ADDRESS]     const input = document.getElementById('newActivity');
+[MAC_ADDRESS]     const name = input.value.trim();
+[MAC_ADDRESS]     if (!name) return;
+[MAC_ADDRESS]     activities.push(name);
+[MAC_ADDRESS]     saveData();
+[MAC_ADDRESS]     input.value = '';
+[MAC_ADDRESS]     renderActivities();
+[MAC_ADDRESS]     renderActivitySelector();
+[MAC_ADDRESS]     showToast(`✅ Actividad "${name}" agregada`);
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function updateActivity(index, newName) {
+[MAC_ADDRESS]     if (selectedActivity === activities[index]) selectedActivity = newName;
+[MAC_ADDRESS]     activities[index] = newName;
+[MAC_ADDRESS]     saveData();
+[MAC_ADDRESS]     renderActivitySelector();
+[MAC_ADDRESS]     showToast('✅ Actividad actualizada');
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function removeActivity(index) {
+[MAC_ADDRESS]     activities.splice(index, 1);
+[MAC_ADDRESS]     if (!activities.includes(selectedActivity)) selectedActivity = activities[0] || '';
+[MAC_ADDRESS]     saveData();
+[MAC_ADDRESS]     renderActivities();
+[MAC_ADDRESS]     renderActivitySelector();
+[MAC_ADDRESS]     showToast('❌ Actividad eliminada');
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function saveAssignment(activity, team) {
+[MAC_ADDRESS]     const now = new Date();
+[MAC_ADDRESS]     const weekNum = getWeekNumber(now);
+[MAC_ADDRESS]     const entry = {
+[MAC_ADDRESS][MAC_ADDRESS]  date: now.toLocaleString('es-MX'),
+[MAC_ADDRESS][MAC_ADDRESS]  week: `Semana ${weekNum}`,
+[MAC_ADDRESS][MAC_ADDRESS]  weekNum: weekNum,
+[MAC_ADDRESS][MAC_ADDRESS]  activity: activity,
+[MAC_ADDRESS][MAC_ADDRESS]  team: team,
+[MAC_ADDRESS][MAC_ADDRESS]  id: Date.now()
+[MAC_ADDRESS]     };
+[MAC_ADDRESS]     history.unshift(entry);
+[MAC_ADDRESS]     saveData();
+[MAC_ADDRESS]     showToast('✅ Asignación guardada en historial');
+[MAC_ADDRESS]     renderWeekFilter();
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function getWeekNumber(d) {
+[MAC_ADDRESS]     d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+[MAC_ADDRESS]     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+[MAC_ADDRESS]     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+[MAC_ADDRESS]     return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function renderWeekFilter() {
+[MAC_ADDRESS]     const select = document.getElementById('weekFilter');
+[MAC_ADDRESS]     const weeks = [...new Set(history.map(h => h.week))];
+[MAC_ADDRESS]     select.innerHTML = '<option value="all">Todas</option>' +
+[MAC_ADDRESS][MAC_ADDRESS]  weeks.map(w => `<option value="${w}">${w}</option>`).join('');
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function renderHistory() {
+[MAC_ADDRESS]     const filter = document.getElementById('weekFilter').value;
+[MAC_ADDRESS]     const filtered = filter === 'all' ? history : history.filter(h => h.week === filter);
+[MAC_ADDRESS]     const participantCount = {};
+[MAC_ADDRESS]     filtered.forEach(h => h.team.forEach(t => { participantCount[t] = (participantCount[t] || 0) + 1; }));
+[MAC_ADDRESS]     const statsDiv = document.getElementById('historyStats');
+[MAC_ADDRESS]     statsDiv.innerHTML = `
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="stat-card">
+[MAC_ADDRESS][MAC_ADDRESS]      <div class="number">${filtered.length}</div>
+[MAC_ADDRESS][MAC_ADDRESS]      <div class="label">Asignaciones</div>
+[MAC_ADDRESS][MAC_ADDRESS]  </div>
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="stat-card">
+[MAC_ADDRESS][MAC_ADDRESS]      <div class="number">${Object.keys(participantCount).length}</div>
+[MAC_ADDRESS][MAC_ADDRESS]      <div class="label">Participantes Activos</div>
+[MAC_ADDRESS][MAC_ADDRESS]  </div>
+[MAC_ADDRESS][MAC_ADDRESS]  <div class="stat-card">
+[MAC_ADDRESS][MAC_ADDRESS]      <div class="number">${[...new Set(filtered.map(h => h.activity))].length}</div>
+[MAC_ADDRESS][MAC_ADDRESS]      <div class="label">Actividades Usadas</div>
+[MAC_ADDRESS][MAC_ADDRESS]  </div>
+[MAC_ADDRESS]     `;
+[MAC_ADDRESS]     const tbody = document.getElementById('historyBody');
+[MAC_ADDRESS]     tbody.innerHTML = filtered.map(h => `
+[MAC_ADDRESS][MAC_ADDRESS]  <tr>
+[MAC_ADDRESS][MAC_ADDRESS]      <td>${h.date}</td>
+[MAC_ADDRESS][MAC_ADDRESS]      <td>${h.week}</td>
+[MAC_ADDRESS][MAC_ADDRESS]      <td>${h.activity}</td>
+[MAC_ADDRESS][MAC_ADDRESS]      <td>${h.team.join(', ')}</td>
+[MAC_ADDRESS][MAC_ADDRESS]      <td><button class="btn-danger" onclick="deleteHistoryEntry(${h.id})">🗑️</button></td>
+[MAC_ADDRESS][MAC_ADDRESS]  </tr>
+[MAC_ADDRESS]     `).join('');
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function deleteHistoryEntry(id) {
+[MAC_ADDRESS]     history = history.filter(h => h.id !== id);
+[MAC_ADDRESS]     saveData();
+[MAC_ADDRESS]     renderHistory();
+[MAC_ADDRESS]     showToast('Registro eliminado');
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function clearHistory() {
+[MAC_ADDRESS]     if (confirm('¿Estás seguro de limpiar todo el historial?')) {
+[MAC_ADDRESS][MAC_ADDRESS]  history = [];
+[MAC_ADDRESS][MAC_ADDRESS]  saveData();
+[MAC_ADDRESS][MAC_ADDRESS]  renderHistory();
+[MAC_ADDRESS][MAC_ADDRESS]  showToast('Historial limpiado');
+[MAC_ADDRESS]     }
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function saveData() {
+[MAC_ADDRESS]     localStorage.setItem('ruleta_participants', JSON.stringify(participants));
+[MAC_ADDRESS]     localStorage.setItem('ruleta_activities', JSON.stringify(activities));
+[MAC_ADDRESS]     localStorage.setItem('ruleta_history', JSON.stringify(history));
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] function showToast(msg) {
+[MAC_ADDRESS]     const toast = document.getElementById('toast');
+[MAC_ADDRESS]     toast.textContent = msg;
+[MAC_ADDRESS]     toast.classList.add('show');
+[MAC_ADDRESS]     setTimeout(() => toast.classList.remove('show'), 3000);
+[MAC_ADDRESS] }
+
+[MAC_ADDRESS] // INIT
+[MAC_ADDRESS] renderWheel();
+[MAC_ADDRESS] renderActivitySelector();
+
+[MAC_ADDRESS] if ('serviceWorker' in navigator) {
+[MAC_ADDRESS]     navigator.serviceWorker.register('sw.js').catch(() => {});
+[MAC_ADDRESS] }
+    </script>
+</body>
+</html>
+

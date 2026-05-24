@@ -1,0 +1,24 @@
+
+{
+    "name": "Ruleta de Asignación de Tareas",
+    "short_name": "Ruleta Tareas",
+    "description": "Asigna tareas a equipos de forma aleatoria con una ruleta interactiva",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#1a1a2e",
+    "theme_color": "#1a1a2e",
+    "orientation": "portrait-primary",
+    "icons": [
+[MAC_ADDRESS] {
+[MAC_ADDRESS]     "src": "icon-192.png",
+[MAC_ADDRESS]     "sizes": "192x192",
+[MAC_ADDRESS]     "type": "image/png"
+[MAC_ADDRESS] },
+[MAC_ADDRESS] {
+[MAC_ADDRESS]     "src": "icon-512.png",
+[MAC_ADDRESS]     "sizes": "512x512",
+[MAC_ADDRESS]     "type": "image/png"
+[MAC_ADDRESS] }
+    ]
+}
+
